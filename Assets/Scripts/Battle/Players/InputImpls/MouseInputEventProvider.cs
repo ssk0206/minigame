@@ -23,11 +23,10 @@ namespace minigame.Battle.Players.InputImpls
                 .Select(_ => Input.mousePosition)
                 .Subscribe(x => _movePosition.SetValueAndForceNotify(x)); // 同じ値でも通知
 
+            // 長押し間、常に発行
             this.UpdateAsObservable()
-                .Select(_ => Input.GetMouseButtonDown(0))
-                .DistinctUntilChanged()
-                // .Subscribe(x => _onClicked.Value = x);
-                .Subscribe(x => Debug.Log(x));
+                .Select(_ => Input.GetMouseButton(0))
+                .Subscribe(x => _onClicked.SetValueAndForceNotify(x));
         }
     }
 }
