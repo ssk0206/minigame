@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,6 +7,7 @@ using UniRx;
 using UniRx.Triggers;
 
 using minigame.Battle.Inputs;
+using minigame.Battle.Bullets;
 
 namespace minigame.Battle.Players
 {
@@ -23,18 +25,28 @@ namespace minigame.Battle.Players
         [SerializeField, Range(0, 1)] 
         private float followStrength;
 
-        private Vector3 _position;
+        private Vector3 _localPos = new Vector3(0, 0, 0);
+
+        private BulletManager _bulletManager;
+        private void Awake() {
+            _bulletManager =  new BulletManager(transform, 0);
+        }
 
         protected void Start()
         {
+
             var inputEvent = GetComponent<IInputEventProvider>();
-            // MovePosition が発行されたら Vector3 に convert する
-            inputEvent.MovePosition.Subscribe(x => _position = x);
+
+            Observable
+                .Interval(TimeSpan.FromMilliseconds(100))
+                .Where(_ => inputEvent.OnClicked.Value)
+                .Subscribe(_ => Shot());
 
             this.FixedUpdateAsObservable()
                 .Subscribe(_ => { 
-                    var targetPos = Camera.main.ScreenToWorldPoint(_position);
+                    var targetPos = Camera.main.ScreenToWorldPoint(inputEvent.MovePosition.Value);
                     targetPos = Move(targetPos);
+                    transform.Rotate(0, 0, -2);
                     transform.position = Vector3.Lerp(transform.position, targetPos, followStrength);
                 });
         }
@@ -47,6 +59,16 @@ namespace minigame.Battle.Players
             targetPos.z = 0f;
 
             return targetPos;
+        }
+
+        private void Shot() 
+        {
+            var bulletType = BulletType.Normal;
+
+            _localPos.y = 0.15f;
+            _bulletManager.Add(bulletType, transform.TransformPoint(_localPos), transform.localEulerAngles.z+90, 3);
+            _localPos.y = -0.15f;
+            _bulletManager.Add(bulletType, transform.TransformPoint(_localPos), transform.localEulerAngles.z-90, 3);
         }
     }
 }
